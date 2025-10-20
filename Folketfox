@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FolketFox - Study Buddy</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #f5f5f5; margin:0; padding:0; }
+    .container { max-width: 480px; margin: auto; padding: 20px; }
+    h1,h2{ font-weight: 700; }
+    .section {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+    .section:hover { transform: translateY(-2px); }
+    .highlighted { background-color: #fff9c4; }
+    input, textarea, select { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ccc; margin-bottom:10px; font-size:16px; }
+    button { padding: 10px 18px; border-radius: 12px; border: none; cursor: pointer; font-weight:600; transition: 0.2s; margin-right:5px; }
+    button:hover { opacity:0.85; transform: translateY(-1px);}
+    .ai-output { white-space: pre-wrap; margin-top: 8px; color: #333; font-size: 15px; }
+    .dark-mode { background: #1e1e2f; color: #fdf6f0; }
+    .dark-mode .section { background: #2a2a3a; }
+    .dark-mode .ai-output { color:#fdf6f0; }
+    .avatar { font-size: 50px; display:flex; justify-content:center; margin-bottom:10px; }
+    .coins { font-size:18px; font-weight:600; margin-top:10px; text-align:center; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+<h1 class="text-3xl text-center mb-6">FolketFox 🦊</h1>
+
+<!-- Avatar Card -->
+<div class="section text-center">
+  <div class="avatar" id="avatar">👤</div>
+  <button onclick="changeAvatar()" class="bg-blue-400 text-white">Change Avatar</button>
+  <div class="coins">Coins: <span id="coins">0</span></div>
+</div>
+
+<!-- Habit Tracker Card -->
+<div class="section">
+  <h2 class="text-xl mb-4">Habits</h2>
+  <input type="text" id="newHabit" placeholder="Add a new habit">
+  <div id="habitList"></div>
+  <button onclick="toggleDark()" class="bg-gray-300">Dark Mode</button>
+</div>
+
+<!-- Notes Card -->
+<div class="section">
+  <h2 class="text-xl mb-4">Notes</h2>
+  <input type="text" id="noteTitle" placeholder="Note title">
+  <textarea id="noteContent" rows="3" placeholder="Your note..."></textarea>
+  <input type="date" id="noteDue">
+  <button onclick="addNote()" class="bg-green-400 text-white">Add Note</button>
+  <div id="notesList"></div>
+</div>
+
+<!-- Daily Essay -->
+<div class="section">
+  <h2 class="text-xl mb-4">Daily Essay</h2>
+  <textarea id="essayInput" rows="3" placeholder="Write your essay here..."></textarea>
+  <button onclick="submitEssay()" class="bg-purple-400 text-white">Submit Essay</button>
+  <div id="essayOutput" class="ai-output"></div>
+</div>
+
+<!-- Subject Helper -->
+<div class="section">
+  <h2 class="text-xl mb-4">Subject Helper</h2>
+  <select id="subjectSelect">
+    <option value="math">Math</option>
+    <option value="science">Science</option>
+    <option value="biology">Biology</option>
+    <option value="physics">Physics</option>
+    <option value="chemistry">Chemistry</option>
+    <option value="english">English / Literature</option>
+    <option value="history">History</option>
+    <option value="geography">Geography</option>
+    <option value="computer">Computer Science / Coding</option>
+    <option value="art">Art / Visual Arts</option>
+    <option value="music">Music</option>
+    <option value="pe">Physical Education</option>
+    <option value="economics">Economics / Business</option>
+    <option value="languages">Languages</option>
+  </select>
+  <textarea id="subjectInput" rows="2" placeholder="Type your question here..."></textarea>
+  <button onclick="subjectHint()" class="bg-yellow-400 text-white">Get Hint</button>
+  <div id="subjectOutput" class="ai-output"></div>
+</div>
+
+<!-- Picture Upload -->
+<div class="section">
+  <h2 class="text-xl mb-4">Upload Picture</h2>
+  <input type="file" id="picUpload" accept="image/*">
+  <button onclick="analyzePic()" class="bg-pink-400 text-white">Analyze Picture</button>
+  <div id="picOutput" class="ai-output"></div>
+</div>
+
+<script>
+// Avatar & Coins
+let coins = parseInt(localStorage.getItem('coins')||0);
+document.getElementById('coins').textContent = coins;
+let avatarFaces = ['👤','🦊','🐱','🐶','🐸'];
+let currentAvatar = localStorage.getItem('avatar')||'👤';
+document.getElementById('avatar').textContent = currentAvatar;
+function changeAvatar(){
+  const next = avatarFaces[Math.floor(Math.random()*avatarFaces.length)];
+  currentAvatar = next;
+  localStorage.setItem('avatar', currentAvatar);
+  document.getElementById('avatar').textContent = currentAvatar;
+}
+
+// Habits
+let habits = JSON.parse(localStorage.getItem('habits')||'[]');
+if(habits.length===0){ habits=[{name:"Read 15 min",streak:0},{name:"Reflect / Think",streak:0},{name:"Check Grammar",streak:0}]; localStorage.setItem('habits',JSON.stringify(habits)); }
+function saveHabits(){ localStorage.setItem('habits',JSON.stringify(habits)); }
+function renderHabits(){ const container=document.getElementById('habitList'); container.innerHTML=''; habits.forEach((h,i)=>{ const div=document.createElement('div'); div.className='flex justify-between mb-2'; div.innerHTML=`<span>${h.name} 🔥 ${h.streak}</span><div><button onclick="increment(${i})" class="bg-green-400 text-white px-2 rounded">+</button><button onclick="removeHabit(${i})" class="bg-red-400 text-white px-2 rounded">x</button></div>`; container.appendChild(div); }); }
+function addHabit(){ const val=document.getElementById('newHabit').value.trim(); if(!val) return alert('Enter habit name!'); habits.push({name:val,streak:0}); saveHabits(); renderHabits(); document.getElementById('newHabit').value=''; }
+function increment(i){ habits[i].streak+=1; coins+=5; localStorage.setItem('coins',coins); document.getElementById('coins').textContent=coins; saveHabits(); renderHabits(); }
+function removeHabit(i){ habits.splice(i,1); saveHabits(); renderHabits(); }
+
+// Notes
+let notes = JSON.parse(localStorage.getItem('notes')||'[]');
+function saveNotes(){ localStorage.setItem('notes',JSON.stringify(notes)); }
+function renderNotes(){ const container=document.getElementById('notesList'); container.innerHTML=''; notes.forEach((n,i)=>{ const div=document.createElement('div'); div.className='section '+(n.highlighted?'highlighted':''); div.innerHTML=`<strong>${n.title}</strong> | Due: ${n.dueDate || 'N/A'}<br>${n.content}<div class="mt-1"><button onclick="toggleHighlight(${i})" class="bg-yellow-400 text-white px-2 rounded">Highlight</button><button onclick="deleteNote(${i})" class="bg-red-400 text-white px-2 rounded">Delete</button></div>`; container.appendChild(div); }); }
+function addNote(){ const t=document.getElementById('noteTitle').value.trim(); const c=document.getElementById('noteContent').value.trim(); const d=document.getElementById('noteDue').value; if(!t||!c) return alert('Fill title and content'); notes.push({title:t,content:c,dueDate:d,highlighted:false}); saveNotes(); renderNotes(); document.getElementById('noteTitle').value=''; document.getElementById('noteContent').value=''; document.getElementById('noteDue').value=''; }
+function toggleHighlight(i){ notes[i].highlighted=!notes[i].highlighted; saveNotes(); renderNotes(); }
+function deleteNote(i){ notes.splice(i,1); saveNotes(); renderNotes(); }
+
+// Essays
+function submitEssay(){ const text=document.getElementById('essayInput').value.trim(); if(!text) return alert('Write an essay!'); coins+=10; localStorage.setItem('coins',coins); document.getElementById('coins').textContent=coins; const sentences=text.split(/[.!?]/).map(s=>s.trim()); let feedback=''; sentences.forEach((s,i)=>{ if(s.split(' ').length>15) feedback+=`Sentence ${i+1} is long, consider splitting.\n`; }); feedback+='Tip: Use clear sentences and check spelling.'; document.getElementById('essayOutput').textContent=feedback; document.getElementById('essayInput').value=''; }
+
+// Subject Helper
+const subjectHints = { math:["Break into steps"], science:["Identify key concept"], biology:["Consider functions"], physics:["List known quantities"], chemistry:["Balance equations"], english:["Check grammar"], history:["Look at causes"], geography:["Use maps"], computer:["Break problem into steps"], art:["Think composition"], music:["Look for patterns"], pe:["Focus on technique"], economics:["Identify factors"], languages:["Check vocabulary"]};
+function subjectHint(){ const subj=document.getElementById('subjectSelect').value; const input=document.getElementById('subjectInput').value.trim(); if(!input) return alert('Type your question first!'); const hints=subjectHints[subj]||["Think carefully and break down the problem"]; const hint=hints[Math.floor(Math.random()*hints.length)]; document.getElementById('subjectOutput').textContent=`Hint: ${hint}\nThis tool guides you, it doesn't give answers.`; }
+
+// Picture Upload
+function analyzePic(){ const file=document.getElementById('picUpload').files[0]; if(!file) return alert('Upload an image first!'); document.getElementById('picOutput').textContent='Mock Analysis: Looks good! Check labels and clarity.'; }
+
+// Dark Mode
+function toggleDark(){ document.body.classList.toggle('dark-mode'); }
+
+// Initial Render
+renderHabits(); renderNotes();
+</script>
+
+</div>
+</body>
+</html>
